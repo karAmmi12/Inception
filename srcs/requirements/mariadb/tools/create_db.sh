@@ -1,23 +1,19 @@
 #!/bin/bash
 
-#
-service mariadb start
-sleep 5 # wait for mariadb to start
+# Update the request.sql file
+sed -i 's|{{WORDPRESS_DB_NAME}}|'${WORDPRESS_DB_NAME}'|g' /tmp/request.sql
+sed -i 's|{{WORDPRESS_DB_USER}}|'${WORDPRESS_DB_USER}'|g' /tmp/request.sql
+sed -i 's|{{WORDPRESS_DB_PASSWORD}}|'${WORDPRESS_DB_PASSWORD}'|g' /tmp/request.sql
+sed -i 's|{{MYSQL_ROOT_PASSWORD}}|'${MYSQL_ROOT_PASSWORD}'|g' /tmp/request.sql
 
-# Create database
-mariadb -e "CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;"
+# Update the my.cnf file
+sed -i 's|{{MYSQL_PORT}}|'${MYSQL_PORT}'|g' /etc/mysql/mariadb.conf.d/my.cnf
+sed -i 's|{{MYSQL_ADRRESS}}|'${MYSQL_ADRRESS}'|g' /etc/mysql/mariadb.conf.d/my.cnf
 
-# Create user
-mariadb -e "CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';"
-
-# Grant privileges
-mariadb -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';"
-
-# Flush privileges
-mariadb -e "FLUSH PRIVILEGES;"
-
-# Restart mariadb
-mysqladmin -u root -p$MYSQL_ROOT_PASSWORD shutdown
-
-# Restart mariadb with new congfig in the background
-mysqld_safe --port=3306 --bind-address=0.0.0.0 --datadir='/var/lib/mysql'
+if [ -d "/var/lib/mysql/$WORDPRESS_DB_NAME" ]; then
+	echo "WordPress already installed"
+	mysqld_safe
+else
+	mysql_install_db
+	mysqld --init-file="/tmp/request.sql"
+fi
