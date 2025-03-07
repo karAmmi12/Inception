@@ -15,14 +15,12 @@ RUN     apt-get install -y \
         chown -R mysql:mysql /etc/mysql
            
 COPY	./conf/my.cnf /etc/mysql/mariadb.conf.d/my.cnf
-COPY	./conf/init.sql /tmp/init.sql
+COPY	./conf/request.sql /tmp/request.sql
 COPY	./tools/create_db.sh /tmp/create_db.sh
         
 RUN		chown -R mysql:mysql /etc/mysql && \
         chown -R mysql:mysql /tmp/
         
-# Not supposed to be exposed to the host machine
-# EXPOSE	3306
         
 USER	mysql
         
