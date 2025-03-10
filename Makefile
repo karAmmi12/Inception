@@ -16,12 +16,7 @@ CYAN			=	\033[0;36m
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~{ COMMANDES }~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 
-DOCKER_COMPOSE := $(shell \
-    if command -v docker compose > /dev/null 2>&1; then \
-        echo "docker compose"; \
-    else \
-        echo "docker-compose"; \
-    fi)
+DOCKER_COMPOSE := docker compose
 
 
 
@@ -30,76 +25,52 @@ DOCKER_COMPOSE := $(shell \
 
 SRCS_PATH 		=	 ./srcs
 
-DOCKER_COMPOSE_FILE = $(SRCS_PATH)/docker-compose.yml
+DOCKER_COMPOSE_PATH = $(SRCS_PATH)/docker-compose.yml
 
 HOST	:= kammi.42.fr 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~{ VOLUMES }~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~{ HOME }~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 USER_HOME = $(shell echo ~)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{ RULES }~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-all: check_docker check_env host make_volumes up
+all: init up
 
 up:
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up -d --build 
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_PATH) up -d --build 
 
 down:
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) down -v --remove-orphans
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_PATH) down -v --remove-orphans
 
 re: down up
 
 logs:
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) logs -f
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_PATH) logs -f
+
+volumes_list:
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_PATH) ps -a
 
 clean:
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) down -v --remove-orphans --rmi all
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_PATH) down -v --remove-orphans --rmi all
 
 fclean: clean
-	@sudo rm -rd $
+	@sudo rm -rd $(USER_HOME)/data/mysql
 	
 	
 	@sudo rm -rd $(USER_HOME)/data/wordpress
+	@echo "$(GREEN)Volumes removed!$(RESET)"
 
-
-make_volumes:
+init:
 	@echo "$(YELLOW)Creating volumes (in $(USER_HOME)/data)...$(RESET)"
 	@mkdir -p $(HOME)/data/mysql
 	@mkdir -p $(HOME)/data/wordpress
 	@sudo chown -R $(USER) $(HOME)/data
 	@sudo chmod -R 777 $(HOME)/data
 	@echo "$(GREEN)Volumes created!$(RESET)"
-
-host:
-	@for host in $(HOST); do \
-		if grep " $$host" /etc/hosts; then \
-			echo "$(GREEN)Host $$host already exists in /etc/hosts, skipping...$(RESET)"; \
-		else \
-			echo "$(GREEN)Adding host $$host to /etc/hosts$(RESET)"; \
-			echo "127.0.0.1 $$host" | sudo tee -a /etc/hosts > /dev/null; \
-		fi \
-	done
-
-check_env:
-	@if [ ! -f $(SRCS_PATH)/.env ]; then \
-		echo "$(RED)Error: .env file not found!$(RESET)"; \
-		exit 1; \
-	fi
-
-check_docker:
-	@if ! docker --version > /dev/null 2>&1; then \
-		echo "$(RED)Error: Docker not installed!$(RESET)"; \
-		exit 1; \
-	fi
-
-	@if ! $(DOCKER_COMPOSE) --version > /dev/null 2>&1; then \
-		echo "$(RED)Error: Docker Compose not installed!$(RESET)"; \
-		exit 1; \
-	fi
 
 .PHONY: all up down re clean fclean
 

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 PHP_VERSION=$(php -v | head -n 1 | cut -d " " -f 2 | cut -d "." -f 1,2)
-# echo "PHP_VERSION: ${PHP_VERSION}"
 
-# Move the configuration file to the correct location
+
+# Deplacer le fichier de configuration vers le bon emplacement
 mv /tmp/www.conf /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
 
 sed -i 's|{{WORDPRESS_PORT}}|'${WORDPRESS_PORT}'|g' /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
@@ -11,11 +11,10 @@ sed -i 's|{{WORDPRESS_PORT}}|'${WORDPRESS_PORT}'|g' /etc/php/${PHP_VERSION}/fpm/
 if [ -f "$WORDPRESS_PATH/wp-config.php" ]; then
 	echo "WordPress already installed"
 else
-	# Install WordPress
+	# Installer WordPress
 	curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 	chmod +x wp-cli.phar
 	mv wp-cli.phar /usr/local/bin/wp
-
 	wp core download --path=$WORDPRESS_PATH --allow-root
 	cd $WORDPRESS_PATH
 	wp config create --dbname=$WORDPRESS_DB_NAME --dbuser=$WORDPRESS_DB_USER --dbpass=$WORDPRESS_DB_PASSWORD --dbhost=mariadb --dbprefix=$WORDPRESS_DB_PREFIX --skip-check --allow-root
